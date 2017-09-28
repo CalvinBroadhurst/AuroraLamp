@@ -16,6 +16,13 @@ except:
     from time import sleep
 
 # Later on we can use mp to decide whether to try and talk to neopixels etc or just show values on screen
+
+# Need some dictionaries or something to store the data in
+# Need to define some things better such as number of pixels, colours, urls etc
+#
+# def read_data()
+# def scale_data()
+# def show_data()
    
 def aurora():
   kp, bz, bz_gsm, bt, g, density, speed = 0,0,0,0,0,0,0

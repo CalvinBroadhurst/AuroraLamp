@@ -23,7 +23,49 @@ except:
 # def read_data()
 # def scale_data()
 # def show_data()
-   
+
+def read_data():
+    aurora_data = {}
+    
+    try:
+      jdata = loads(get('http://services.swpc.noaa.gov/products/solar-wind/mag-5-minute.json').text)
+      aurora_data['bz_gsm'] = float(jdata[-1][jdata[0].index('bz_gsm')])
+    except:
+      print('Error getting bz_gsm')
+      aurora_data['bz_gsm'] = 0
+    try:
+      jdata = loads(get('http://services.swpc.noaa.gov/products/noaa-scales.json').text)
+      aurora_data['g'] = int(jdata['0']['G']['Scale'])
+    except:
+      print('Error getting g')
+      aurora_data['g'] = 0 
+    try:
+      jdata = loads(get('http://services.swpc.noaa.gov/products/summary/solar-wind-mag-field.json').text)
+      aurora_data['bz'] = int(jdata['Bz'])
+      aurora_data['bt'] = int(jdata['Bt'])
+      aurora_data['timestamp'] = jdata['TimeStamp']
+    except:
+      print('Error getting Bz/Bt')
+      aurora_data['bz'] = 0
+      aurora_data['bt'] = 0
+      aurora_data['timestamp'] = 'Error'
+    try:
+      jdata = loads(get('http://services.swpc.noaa.gov/products/noaa-planetary-k-index.json').text)
+      aurora_data['kp'] = int(jdata[-1][jdata[0].index('Kp')])
+    except:
+      print('Error getting Kp')
+      aurora_data['Kp'] = 0
+    try:
+      jdata = loads(get('http://services.swpc.noaa.gov/products/solar-wind/plasma-5-minute.json').text)
+      aurora_data['density'] = float(jdata[-1][jdata[0].index('density')])
+      aurora_data['speed'] = float(jdata[-1][jdata[0].index('speed')])
+    except:
+      print('Error getting Density/Speed')
+      aurora_data['denisty'] = 0
+      aurora_data['speed'] = 0
+      
+    return aurora_data
+
 def aurora():
   kp, bz, bz_gsm, bt, g, density, speed = 0,0,0,0,0,0,0
   timestamp = 'none'
@@ -47,38 +89,11 @@ def aurora():
     if mp == True:
       heartbeat.off() # turn on LED to show we are retrieving data
       
-    try:
-      jdata = loads(get('http://services.swpc.noaa.gov/products/solar-wind/mag-5-minute.json').text)
-      bz_gsm = float(jdata[-1][jdata[0].index('bz_gsm')])
-    except:
-      print('Error getting bz_gsm')
-    try:
-      jdata = loads(get('http://services.swpc.noaa.gov/products/noaa-scales.json').text)
-      g = int(jdata['0']['G']['Scale'])
-    except:
-      print('Error getting g')
-    try:
-      jdata = loads(get('http://services.swpc.noaa.gov/products/summary/solar-wind-mag-field.json').text)
-      bz = int(jdata['Bz'])
-      bt = int(jdata['Bt'])
-      timestamp = jdata['TimeStamp']
-    except:
-      print('Error getting Bz/Bt')
-    try:
-      jdata = loads(get('http://services.swpc.noaa.gov/products/noaa-planetary-k-index.json').text)
-      kp = int(jdata[-1][jdata[0].index('Kp')])
-    except:
-      print('Error getting Kp')
-    try:
-      jdata = loads(get('http://services.swpc.noaa.gov/products/solar-wind/plasma-5-minute.json').text)
-      density = float(jdata[-1][jdata[0].index('density')])
-      speed = float(jdata[-1][jdata[0].index('speed')])
-    except:
-      print('Error getting Density/Speed')
+    adata = read_data()
 
     print('')
-    print(timestamp)
-    print('kp=',kp, ' g=',g,' bz=',bz, ' bz_gsm=',bz_gsm, ' bt=',bt, ' den=',density, 'spd=',speed)
+    print(adata['timestamp'])
+    print('kp=', adata['kp'], ' g=', adata['g'],' bz=', adata['bz'], ' bz_gsm=', adata['bz_gsm'], ' bt=', adata['bt'], ' den=', adata['density'], 'spd=', adata['speed'])
 
     s_g = g # Don't bother scaling G for now... it is already 0-5
     print('G ', s_g)
@@ -134,5 +149,5 @@ def ScaleClip(value, minimum, maximum, scale):
     
 if __name__ == '__main__':
     print('in aurora module and about to run aurora... shouldnt see this')
-    Aurora()
+    aurora()
     

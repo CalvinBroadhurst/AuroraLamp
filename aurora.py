@@ -5,6 +5,7 @@ try:
     from utime import sleep_ms
     from machine import Pin
     from neopixel import NeoPixel
+    import gc
     mp = True # We have imported micropython packages so we are running micropython
     pin = Pin(14, Pin.OUT) # Pin 14 is signal for NeoPixel
     heartbeat = Pin(2, Pin.OUT)  # Pin 2 is connected to the blue LED on Wemos board
@@ -14,18 +15,51 @@ except:
     from requests import get
     from json import loads
     from time import sleep
+    import gc
 
 # Later on we can use mp to decide whether to try and talk to neopixels etc or just show values on screen
 
-# Need some dictionaries or something to store the data in
 # Need to define some things better such as number of pixels, colours, urls etc
 #
-# def read_data()
-# def scale_data()
-# def show_data()
+# def read_data()        ---done---
+# def scale_data()       ---done---
+# def print_data()       ---done---
+# def neopixel_display() ---done---
+# def notify_me()        - started -
 
-def read_data():
-    aurora_data = {}
+def aurora():
+  aurora_data = {}
+  print('in aurora function and about to run aurora')
+  
+  spin_the_ring() # just for fun we will spin the LEDs on the ring to show we're starting
+
+  while True:
+    gc.collect()
+    if mp == True:
+      heartbeat.off() # turn on LED to show we are retrieving data
+
+    # Read the data from the various web urls
+    read_data(aurora_data)
+    # Scale the data so it is appropriate for the neopixel display
+    scale_data(aurora_data)
+    # Print the data out to the terminal (mainly just for debugging etc)
+    print_data(aurora_data)
+    # Show the values on the neopixel ring
+    neopixel_display(aurora_data)
+
+    if mp == True:
+        heartbeat.on() # turn off LED to show we are done retrieving data
+        sleep(30)
+        heartbeat.off() # show that we are still alive
+        sleep_ms(100)
+        heartbeat.on()
+        sleep(30)
+    else:
+        sleep(60)
+
+
+
+def read_data(aurora_data):
     
     try:
       jdata = loads(get('http://services.swpc.noaa.gov/products/solar-wind/mag-5-minute.json').text)
@@ -66,11 +100,43 @@ def read_data():
       
     return aurora_data
 
-def aurora():
-  kp, bz, bz_gsm, bt, g, density, speed = 0,0,0,0,0,0,0
-  timestamp = 'none'
-  print('in aurora function and about to run aurora')
-  
+def scale_data(aurora_data):
+    aurora_data['s_g'] = aurora_data['g'] # Don't bother scaling G for now... it is already 0-5
+
+    aurora_data['s_bt'] = scale_and_clip(aurora_data['bt'],0,20,5) # Scale Bt from 0-20 to 0-5
+
+    if aurora_data['bz'] > 0:
+        aurora_data['s_bz'] = 0
+    else:
+        aurora_data['s_bz'] = scale_and_clip(abs(aurora_data['bz']),0,20,5) # Scale Bz from 0-20 (actually 0 to -20) to 0-5
+
+    aurora_data['s_density'] = scale_and_clip(aurora_data['density'],0,50,5) # Scale density from 0-50 to 0-5
+
+    aurora_data['s_speed'] = scale_and_clip(aurora_data['speed'],0,1000,5) # Scale speed from 0-1000 to 0-5
+
+# Scale the values in to a range we can use for the neopixels
+def scale_and_clip(value, minimum, maximum, scale):
+    newval = int(round((float(value)/float(maximum)) * float(scale)))
+    if newval > maximum:
+        newval = maximum
+    elif newval < minimum:
+        newval = minimum
+    return newval
+
+    
+def print_data(aurora_data):
+    print('')
+    print(aurora_data['timestamp'])
+    print('kp=', aurora_data['kp'], ' g=', aurora_data['g'],' bz=', aurora_data['bz'], ' bz_gsm=', aurora_data['bz_gsm'], ' bt=', aurora_data['bt'], ' den=', aurora_data['density'], 'spd=', aurora_data['speed'])
+    print('Scaled Values:')
+    print('Bt ', aurora_data['s_bt'])
+    print('G ', aurora_data['s_g'])
+    print('Bz ', aurora_data['s_bz'])
+    print('Density ', aurora_data['s_density'])
+    print('Speed ', aurora_data['s_speed'])
+
+def spin_the_ring():
+  # If we are running on micropython then spin the LED's on the ring
   if mp == True:
     np.fill((0,0,0))
     for i in range(0,24):
@@ -83,71 +149,31 @@ def aurora():
             np[i-3] = (0,0,0)
         np.write()
         sleep_ms(50)
+    sleep(50)
     np.fill((0,0,0))
 
-  while True:
-    if mp == True:
-      heartbeat.off() # turn on LED to show we are retrieving data
-      
-    adata = read_data()
-
-    print('')
-    print(adata['timestamp'])
-    print('kp=', adata['kp'], ' g=', adata['g'],' bz=', adata['bz'], ' bz_gsm=', adata['bz_gsm'], ' bt=', adata['bt'], ' den=', adata['density'], 'spd=', adata['speed'])
-
-    s_g = g # Don't bother scaling G for now... it is already 0-5
-    print('G ', s_g)
-
-    s_bt = ScaleClip(bt,0,20,5) # Scale Bt from 0-20 to 0-5
-    print('Bt ', s_bt)
-
-    if bz > 0:
-        s_bz = 0
-        print('Bz Positive') # We don't care about +ve Bz so much
-    else:
-        s_bz = ScaleClip(abs(bz),0,20,5) # Scale Bz from 0-20 (actually 0 to -20) to 0-5
-        print('Bz ', s_bz)
-
-    s_density = ScaleClip(density,0,50,5) # Scale density from 0-50 to 0-5
-    print('Density ', s_density)
-
-    s_speed = ScaleClip(speed,0,1000,5) # Scale speed from 0-1000 to 0-5
-    print('Speed ', s_speed)
-
+def neopixel_display(aurora_data):
     if mp == True:
         np.fill((0,0,0))
-        for i in range(0,s_g): # G can go up to 5 but if it does then bt will overwrite the 5th one
+        for i in range(0,aurora_data['s_g']): # G can go up to 5 but if it does then bt will overwrite the 5th one
             np[i] = (64,64,0)  # Make G yellow
-        for i in range(4,s_bt+4):
+        for i in range(4,aurora_data['s_bt']+4):
             np[i] = (64,0,0)  # Make Bt red
-        for i in range(9,s_bz+9):
+        for i in range(9,aurora_data['s_bz']+9):
             np[i] = (0,64,0)  # Make Bz Green
-        for i in range(14,s_density+14):
+        for i in range(14,aurora_data['s_density']+14):
             np[i] = (0,0,64)  # Make Density Blue
-        for i in range(19,s_speed+19):
+        for i in range(19,aurora_data['s_speed']+19):
             np[i] = (64,0,64)  # Make Speed Majenta
         np.write()
 
-    if mp == True:
-        heartbeat.on() # turn off LED to show we are done retrieving data
-        sleep(30)
-        heartbeat.off() # show that we are still alive
-        sleep_ms(100)
-        heartbeat.on()
-        sleep(30)
-    else:
-        sleep(60)
+def notify_me(aurora_data):
+    # This is where the code to send Slack messages etc would go
+    print('Send Slack message or something to let me know something cool is happening')
 
-# Scale the values in to a range we can use for the neopixels
-def ScaleClip(value, minimum, maximum, scale):
-    newval = int(round((float(value)/float(maximum)) * float(scale)))
-    if newval > maximum:
-        newval = maximum
-    elif newval < minimum:
-        newval = minimum
-    return newval
-    
+# If we are being imported as a module then do nothing
+# If we are being run as a script then run
 if __name__ == '__main__':
-    print('in aurora module and about to run aurora... shouldnt see this')
+    print('in aurora module and about to run aurora... shouldnt see this unless we are running script directly')
     aurora()
     

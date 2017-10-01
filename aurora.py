@@ -1,4 +1,4 @@
-try:
+try:  # Try to import these (if we are on ESP8266 board)
     from urequests import get
     from ujson import loads
     from utime import sleep
@@ -10,14 +10,14 @@ try:
     pin = Pin(14, Pin.OUT) # Pin 14 is signal for NeoPixel
     heartbeat = Pin(2, Pin.OUT)  # Pin 2 is connected to the blue LED on Wemos board
     np = NeoPixel(pin, 24)
-except:
-    mp = False # Looks like we failed to import micropython packages so we aren't on micropython
+except: # Looks like we failed to import micropython packages on ESP8266 so assume we are running on PC
+    mp = False 
     from requests import get
     from json import loads
     from time import sleep
     import gc
 
-# Add a few constants
+### Add a few constants ###
 led_red = (32,0,0)
 led_green = (0,32,0)
 led_blue = (0,0,32)
@@ -27,9 +27,6 @@ led_off = (0,0,0)
 
 data_poll_interval = 60 # Seconds between polling for new data
 
-
-
-# Later on we can use mp to decide whether to try and talk to neopixels etc or just show values on screen
 
 # Need to define some things better such as number of pixels, colours, urls etc
 #
@@ -115,25 +112,27 @@ def read_data(aurora_data):
 def scale_data(aurora_data):
     aurora_data['s_g'] = aurora_data['g'] # Don't bother scaling G for now... it is already 0-5
 
-    aurora_data['s_bt'] = scale_and_clip(aurora_data['bt'],0,20,5) # Scale Bt from 0-20 to 0-5
+    aurora_data['s_bt'] = scale_and_clip(aurora_data['bt'],0,20,0,5) # Scale Bt from 0-20 to 0-5
 
     if aurora_data['bz'] > 0:
         aurora_data['s_bz'] = 0
     else:
-        aurora_data['s_bz'] = scale_and_clip(abs(aurora_data['bz']),0,20,5) # Scale Bz from 0-20 (actually 0 to -20) to 0-5
+        aurora_data['s_bz'] = scale_and_clip(abs(aurora_data['bz']),0,20,0,5) # Scale Bz from 0-20 (actually 0 to -20) to 0-5
 
-    aurora_data['s_density'] = scale_and_clip(aurora_data['density'],0,50,5) # Scale density from 0-50 to 0-5
+    aurora_data['s_density'] = scale_and_clip(aurora_data['density'],0,50,0,5) # Scale density from 0-50 to 0-5
 
-    aurora_data['s_speed'] = scale_and_clip(aurora_data['speed'],0,1000,5) # Scale speed from 0-1000 to 0-5
+    aurora_data['s_speed'] = scale_and_clip(aurora_data['speed'],0,1000,0,5) # Scale speed from 0-1000 to 0-5
 
-# Scale the values in to a range we can use for the neopixels
-def scale_and_clip(value, minimum, maximum, scale):
-    newval = int(round((float(value)/float(maximum)) * float(scale)))
-    if newval > maximum:
-        newval = maximum
-    elif newval < minimum:
-        newval = minimum
-    return newval
+# Scale the values to a range we can use for the neopixels
+#   returns an int in range minimum to scale
+#   e.g. scale_and_clip(600, 0, 1000, 5) = (600/1000)*5 = 3
+def scale_and_clip(value, minimum, maximum, scale_min, scale_max):
+    scaled_value = int(round((float(value)/float(maximum)) * float(scale_max)))
+    if scaled_value > scale_max:
+        scaled_value = scale_max
+    elif scaled_value < scale_min: # Note that minimum is the minimum output (not input to this function)
+        scaled_value = scale_min
+    return scaled_value
 
     
 def print_data(aurora_data):
@@ -151,6 +150,7 @@ def spin_the_ring():
   # If we are running on micropython then spin the LED's on the ring
   if mp == True:
     np.fill(led_off)
+    np.write()
     for i in range(0,24):
         np[i] = led_blue
         if i > 0: 
@@ -161,12 +161,13 @@ def spin_the_ring():
             np[i-3] = (0,0,0)
         np.write()
         sleep_ms(50)
-    sleep(50)
     np.fill(led_off)
+    np.write()
 
 def neopixel_display(aurora_data):
     if mp == True:
         np.fill(led_off)
+        np.write()
         for i in range(0,aurora_data['s_g']): # G can go up to 5 but if it does then bt will overwrite the 5th one
             np[i] = led_yellow  # Make G yellow
         for i in range(4,aurora_data['s_bt']+4):

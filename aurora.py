@@ -1,3 +1,14 @@
+# These exist in micropython and on PC
+import gc
+import sys
+
+# This is an optional module to handle user specific external notification (e.g. via slack, email, etc)
+try:
+    import my_notification  # my_notification module needs to contain a notification(message) function (where message is a string)
+except:
+    pass
+
+# These are platform dependent
 try:  # Try to import these (if we are on ESP8266 board)
     from urequests import get
     from ujson import loads
@@ -5,7 +16,6 @@ try:  # Try to import these (if we are on ESP8266 board)
     from utime import sleep_ms
     from machine import Pin
     from neopixel import NeoPixel
-    import gc
     mp = True # We have imported micropython packages so we are running micropython
     pin = Pin(14, Pin.OUT) # Pin 14 is signal for NeoPixel
     heartbeat = Pin(2, Pin.OUT)  # Pin 2 is connected to the blue LED on Wemos board
@@ -28,18 +38,18 @@ led_off = (0,0,0)
 data_poll_interval = 60 # Seconds between polling for new data
 
 
-# Need to define some things better such as number of pixels, colours, urls etc
-#
-# def read_data()        ---done---
-# def scale_data()       ---done---
-# def print_data()       ---done---
-# def neopixel_display() ---done---
-# def notify_me()        - started -
+############## Here we go then #################
 
 def aurora():
   aurora_data = {}
-  print('in aurora function and about to run aurora')
-  
+
+  # default our last known values to zero
+  aurora_data['last_s_g'] = 0
+  aurora_data['last_s_bz'] = 0
+  aurora_data['last_s_bt'] = 0
+  aurora_data['last_s_speed'] = 0
+  aurora_data['last_s_density'] = 0
+
   spin_the_ring() # just for fun we will spin the LEDs on the ring to show we're starting
 
   while True:
@@ -55,6 +65,8 @@ def aurora():
     print_data(aurora_data)
     # Show the values on the neopixel ring
     neopixel_display(aurora_data)
+    # Send external notifications if necessary
+    notifications(aurora_data)
 
     if mp == True:
         heartbeat.on() # turn off LED to show we are done retrieving data
@@ -125,7 +137,8 @@ def scale_data(aurora_data):
 
 # Scale the values to a range we can use for the neopixels
 #   returns an int in range minimum to scale
-#   e.g. scale_and_clip(600, 0, 1000, 5) = (600/1000)*5 = 3
+#   e.g. scale_and_clip(600, 0, 1000, 0, 5) = (600/1000)*5 = 3
+#        scale_and_clip(600, 300, 1000, 0, 5) = (600/1000)*5 = 2  (int(rnd(1.5))
 def scale_and_clip(value, minimum, maximum, scale_min, scale_max):
     scaled_value = int(round((float(value)/float(maximum)) * float(scale_max)))
     if scaled_value > scale_max:
@@ -180,13 +193,39 @@ def neopixel_display(aurora_data):
             np[i] = led_magenta  # Make Speed Majenta
         np.write()
 
-def notify_me(aurora_data):
-    # This is where the code to send Slack messages etc would go
-    print('Send Slack message or something to let me know something cool is happening')
+def notifications(aurora_data):
+    message = ''
+
+    # Check to see what has changed and what we should be notifying about
+    if aurora_data['s_g'] > aurora_data['last_s_g']:
+        message = message + 'G has increased to ' +  aurora_data['g'].text
+    if aurora_data['s_bz'] >= 3 and aurora_data['s_bz'] > aurora_data['last_s_bz']:
+        message = message + 'Bz has increased to ' +  aurora_data['bz'].text
+    if aurora_data['s_bt'] >= 3 and aurora_data['s_bt'] > aurora_data['last_s_bt']:
+        message = message + 'Bz has increased to ' +  aurora_data['bz'].text
+    if aurora_data['s_speed'] >= 3 and aurora_data['s_speed'] > aurora_data['last_s_speed']:
+        message = message + 'Speed has increased to ' +  aurora_data['speed'].text
+    if aurora_data['s_density'] >= 3 and aurora_data['s_density'] > aurora_data['last_s_density']:
+        message = message + 'Density has increased to ' +  aurora_data['density'].text
+
+    # If we have a message to send then send it
+    if message != '':
+        # If we have imported our own personalised notification module then send notification by that
+        if 'my_notification' not in sys.modules:
+            print(message)
+        else:  # If we haven't then just print the message to console
+            my_notification.notification(message)
+
+    # Update the last values for comparison next time around
+    aurora_data['last_s_g'] = aurora_data['s_g']
+    aurora_data['last_s_bz'] = aurora_data['s_bz']
+    aurora_data['last_s_bt'] = aurora_data['s_bt']
+    aurora_data['last_s_speed'] = aurora_data['s_speed']
+    aurora_data['last_s_density'] = aurora_data['s_density']
+
 
 # If we are being imported as a module then do nothing
 # If we are being run as a script then run
 if __name__ == '__main__':
-    print('in aurora module and about to run aurora... shouldnt see this unless we are running script directly')
     aurora()
     

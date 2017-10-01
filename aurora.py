@@ -17,6 +17,18 @@ except:
     from time import sleep
     import gc
 
+# Add a few constants
+led_red = (32,0,0)
+led_green = (0,32,0)
+led_blue = (0,0,32)
+led_yellow = (32,32,0)
+led_magenta = (64,0,64)
+led_off = (0,0,0)
+
+data_poll_interval = 60 # Seconds between polling for new data
+
+
+
 # Later on we can use mp to decide whether to try and talk to neopixels etc or just show values on screen
 
 # Need to define some things better such as number of pixels, colours, urls etc
@@ -49,13 +61,13 @@ def aurora():
 
     if mp == True:
         heartbeat.on() # turn off LED to show we are done retrieving data
-        sleep(30)
+        sleep(data_poll_interval / 2)
         heartbeat.off() # show that we are still alive
         sleep_ms(100)
         heartbeat.on()
-        sleep(30)
+        sleep(data_poll_interval / 2)
     else:
-        sleep(60)
+        sleep(data_poll_interval)
 
 
 
@@ -138,33 +150,33 @@ def print_data(aurora_data):
 def spin_the_ring():
   # If we are running on micropython then spin the LED's on the ring
   if mp == True:
-    np.fill((0,0,0))
+    np.fill(led_off)
     for i in range(0,24):
-        np[i] = (0,0,32)
+        np[i] = led_blue
         if i > 0: 
-            np[i-1] = (0,32,0)
+            np[i-1] = led_green
         if i > 1: 
-            np[i-2] = (32,0,0)
+            np[i-2] = led_red
         if i > 2: 
             np[i-3] = (0,0,0)
         np.write()
         sleep_ms(50)
     sleep(50)
-    np.fill((0,0,0))
+    np.fill(led_off)
 
 def neopixel_display(aurora_data):
     if mp == True:
-        np.fill((0,0,0))
+        np.fill(led_off)
         for i in range(0,aurora_data['s_g']): # G can go up to 5 but if it does then bt will overwrite the 5th one
-            np[i] = (64,64,0)  # Make G yellow
+            np[i] = led_yellow  # Make G yellow
         for i in range(4,aurora_data['s_bt']+4):
-            np[i] = (64,0,0)  # Make Bt red
+            np[i] = led_red  # Make Bt red
         for i in range(9,aurora_data['s_bz']+9):
-            np[i] = (0,64,0)  # Make Bz Green
+            np[i] = led_green  # Make Bz Green
         for i in range(14,aurora_data['s_density']+14):
-            np[i] = (0,0,64)  # Make Density Blue
+            np[i] = led_blue  # Make Density Blue
         for i in range(19,aurora_data['s_speed']+19):
-            np[i] = (64,0,64)  # Make Speed Majenta
+            np[i] = led_magenta  # Make Speed Majenta
         np.write()
 
 def notify_me(aurora_data):

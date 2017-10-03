@@ -51,9 +51,17 @@ def aurora():
   aurora_data['last_s_density'] = 0
 
   spin_the_ring() # just for fun we will spin the LEDs on the ring to show we're starting
+  # If we have imported our own personalised notification module then send notification by that
+  message = 'Starting Aurora Lamp'
+  if 'my_notification' not in sys.modules:
+     print(message)
+  else:  # If we haven't then just print the message to console
+     my_notification.notification(message)
 
   while True:
     gc.collect()
+    print(gc.mem_free())
+
     if mp == True:
       heartbeat.off() # turn on LED to show we are retrieving data
 
@@ -78,24 +86,29 @@ def aurora():
     else:
         sleep(data_poll_interval)
 
-
+# 
+def fetch_json(url):
+    response = get(url)
+    json_data = response.json()
+    response.close() # Get doesn't explicitly close stream itself, so doing this to make sure things are nice and clean
+    return json_data
 
 def read_data(aurora_data):
     
     try:
-      jdata = loads(get('http://services.swpc.noaa.gov/products/solar-wind/mag-5-minute.json').text)
+      jdata = fetch_json('http://services.swpc.noaa.gov/products/solar-wind/mag-5-minute.json')
       aurora_data['bz_gsm'] = float(jdata[-1][jdata[0].index('bz_gsm')])
     except:
       print('Error getting bz_gsm')
       aurora_data['bz_gsm'] = 0
     try:
-      jdata = loads(get('http://services.swpc.noaa.gov/products/noaa-scales.json').text)
+      jdata = fetch_json('http://services.swpc.noaa.gov/products/noaa-scales.json')
       aurora_data['g'] = int(jdata['0']['G']['Scale'])
     except:
       print('Error getting g')
       aurora_data['g'] = 0 
     try:
-      jdata = loads(get('http://services.swpc.noaa.gov/products/summary/solar-wind-mag-field.json').text)
+      jdata = fetch_json('http://services.swpc.noaa.gov/products/summary/solar-wind-mag-field.json')
       aurora_data['bz'] = int(jdata['Bz'])
       aurora_data['bt'] = int(jdata['Bt'])
       aurora_data['timestamp'] = jdata['TimeStamp']
@@ -105,13 +118,13 @@ def read_data(aurora_data):
       aurora_data['bt'] = 0
       aurora_data['timestamp'] = 'Error'
     try:
-      jdata = loads(get('http://services.swpc.noaa.gov/products/noaa-planetary-k-index.json').text)
+      jdata = fetch_json('http://services.swpc.noaa.gov/products/noaa-planetary-k-index.json')
       aurora_data['kp'] = int(jdata[-1][jdata[0].index('Kp')])
     except:
       print('Error getting Kp')
       aurora_data['Kp'] = 0
     try:
-      jdata = loads(get('http://services.swpc.noaa.gov/products/solar-wind/plasma-5-minute.json').text)
+      jdata = fetch_json('http://services.swpc.noaa.gov/products/solar-wind/plasma-5-minute.json')
       aurora_data['density'] = float(jdata[-1][jdata[0].index('density')])
       aurora_data['speed'] = float(jdata[-1][jdata[0].index('speed')])
     except:

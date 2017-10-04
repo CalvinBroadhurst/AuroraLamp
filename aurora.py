@@ -211,15 +211,15 @@ def notifications(aurora_data):
 
     # Check to see what has changed and what we should be notifying about
     if aurora_data['s_g'] > aurora_data['last_s_g']:
-        message = message + 'G has increased to ' + str(aurora_data['g']) + '\n'
-    if aurora_data['s_bz'] >= 0 and aurora_data['s_bz'] > aurora_data['last_s_bz']:
-        message = message + 'Bz has increased to ' +  str(aurora_data['bz']) + '\n'
-    if aurora_data['s_bt'] >= 0 and aurora_data['s_bt'] > aurora_data['last_s_bt']:
-        message = message + 'Bz has increased to ' +  str(aurora_data['bz']) + '\n'
-    if aurora_data['s_speed'] >= 0 and aurora_data['s_speed'] > aurora_data['last_s_speed']:
-        message = message + 'Speed has increased to ' +  str(aurora_data['speed']) + '\n'
-    if aurora_data['s_density'] >= 0 and aurora_data['s_density'] > aurora_data['last_s_density']:
-        message = message + 'Density has increased to ' +  str(aurora_data['density']) + '\n'
+        message = message + 'G is now ' + str(aurora_data['g']) + '\n'
+    if aurora_data['s_bz'] >= 2 and aurora_data['s_bz'] > aurora_data['last_s_bz']:
+        message = message + 'Bz is now ' +  str(aurora_data['bz']) + '\n'
+    if aurora_data['s_bt'] >= 2 and aurora_data['s_bt'] > aurora_data['last_s_bt']:
+        message = message + 'Bt is now ' +  str(aurora_data['bt']) + '\n'
+    if aurora_data['s_speed'] >= 2 and aurora_data['s_speed'] > aurora_data['last_s_speed']:
+        message = message + 'Speed is now ' +  str(aurora_data['speed']) + '\n'
+    if aurora_data['s_density'] >= 2 and aurora_data['s_density'] > aurora_data['last_s_density']:
+        message = message + 'Density is now ' +  str(aurora_data['density']) + '\n'
 
     # If we have a message to send then send it
     if message != '':

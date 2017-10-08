@@ -60,7 +60,7 @@ def aurora():
 
   while True:
     gc.collect()
-    print(gc.mem_free())
+#    print(gc.mem_free())
 
     if mp == True:
       heartbeat.off() # turn on LED to show we are retrieving data
@@ -162,15 +162,16 @@ def scale_and_clip(value, minimum, maximum, scale_min, scale_max):
 
     
 def print_data(aurora_data):
-    print('')
-    print(aurora_data['timestamp'])
-    print('kp=', aurora_data['kp'], ' g=', aurora_data['g'],' bz=', aurora_data['bz'], ' bz_gsm=', aurora_data['bz_gsm'], ' bt=', aurora_data['bt'], ' den=', aurora_data['density'], 'spd=', aurora_data['speed'])
-    print('Scaled Values:')
-    print('Bt ', aurora_data['s_bt'])
-    print('G ', aurora_data['s_g'])
-    print('Bz ', aurora_data['s_bz'])
-    print('Density ', aurora_data['s_density'])
-    print('Speed ', aurora_data['s_speed'])
+    var = ('Timestamp {} : '
+           'kp={} g={} bz={} bz_gsm={} bt={} den={} spd={}')\
+           .format(aurora_data['timestamp'], aurora_data['kp'], aurora_data['g'], aurora_data['bz'], aurora_data['bz_gsm'], aurora_data['bt'], aurora_data['density'], aurora_data['speed'])
+    print('') 
+    print(var)
+    
+    var = ('Scaled Values : '
+           'Bt={} G={} Bz={} Density={} Speed={}').format(aurora_data['s_bt'], aurora_data['s_g'], aurora_data['s_bz'], aurora_data['s_density'], aurora_data['s_speed'])
+    print(var)
+
 
 def spin_the_ring():
   # If we are running on micropython then spin the LED's on the ring
@@ -211,15 +212,15 @@ def notifications(aurora_data):
 
     # Check to see what has changed and what we should be notifying about
     if aurora_data['s_g'] > aurora_data['last_s_g']:
-        message = message + 'G is now ' + str(aurora_data['g']) + '\n'
+        message = message + 'G is now {}\n'.format(aurora_data['g'])
     if aurora_data['s_bz'] >= 2 and aurora_data['s_bz'] > aurora_data['last_s_bz']:
-        message = message + 'Bz is now ' +  str(aurora_data['bz']) + '\n'
+        message = message + 'Bz is now {}\n'.format(aurora_data['bz'])
     if aurora_data['s_bt'] >= 2 and aurora_data['s_bt'] > aurora_data['last_s_bt']:
-        message = message + 'Bt is now ' +  str(aurora_data['bt']) + '\n'
+        message = message + 'Bt is now {}\n'.format(aurora_data['bt'])
     if aurora_data['s_speed'] >= 2 and aurora_data['s_speed'] > aurora_data['last_s_speed']:
-        message = message + 'Speed is now ' +  str(aurora_data['speed']) + '\n'
+        message = message + 'Speed is now {}\n'.format(aurora_data['speed'])
     if aurora_data['s_density'] >= 2 and aurora_data['s_density'] > aurora_data['last_s_density']:
-        message = message + 'Density is now ' +  str(aurora_data['density']) + '\n'
+        message = message + 'Density is now {}\n'.format(aurora_data['density'])
 
     # If we have a message to send then send it
     if message != '':

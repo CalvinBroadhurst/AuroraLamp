@@ -41,14 +41,10 @@ data_poll_interval = 60 # Seconds between polling for new data
 ############## Here we go then #################
 
 def aurora():
-  aurora_data = {}
-
-  # default our last known values to zero
-  aurora_data['last_s_g'] = 0
-  aurora_data['last_s_bz'] = 0
-  aurora_data['last_s_bt'] = 0
-  aurora_data['last_s_speed'] = 0
-  aurora_data['last_s_density'] = 0
+  aurora_data = {"kp": 0, "g": 0, "bz": 0, "bt": 0, "bz_gsm": 0, "speed": 0, "density": 0,\
+                 "s_g": 0, "s_bz": 0, "s_bt": 0, "s_speed": 0, "s_density": 0,\
+                 "last_s_g": 0, "last_s_bz": 0, "last_s_bt": 0, "last_s_speed": 0, "last_s_density": 0,\
+                 "timestamp": "Now"}
 
   spin_the_ring() # just for fun we will spin the LEDs on the ring to show we're starting
   # If we have imported our own personalised notification module then send notification by that
@@ -122,7 +118,7 @@ def read_data(aurora_data):
       aurora_data['kp'] = int(jdata[-1][jdata[0].index('Kp')])
     except:
       print('Error getting Kp')
-      aurora_data['Kp'] = 0
+      aurora_data['kp'] = 0
     try:
       jdata = fetch_json('http://services.swpc.noaa.gov/products/solar-wind/plasma-5-minute.json')
       aurora_data['density'] = float(jdata[-1][jdata[0].index('density')])

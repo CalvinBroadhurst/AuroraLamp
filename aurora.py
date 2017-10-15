@@ -158,14 +158,13 @@ def scale_and_clip(value, minimum, maximum, scale_min, scale_max):
 
     
 def print_data(aurora_data):
-    var = ('Timestamp {} : '
-           'kp={} g={} bz={} bz_gsm={} bt={} den={} spd={}')\
-           .format(aurora_data['timestamp'], aurora_data['kp'], aurora_data['g'], aurora_data['bz'], aurora_data['bz_gsm'], aurora_data['bt'], aurora_data['density'], aurora_data['speed'])
+    var = ('Timestamp {} : kp={} g={} bz={} bz_gsm={} bt={} den={} spd={}')\
+        .format(aurora_data['timestamp'], aurora_data['kp'], aurora_data['g'], aurora_data['bz'], aurora_data['bz_gsm'], aurora_data['bt'], aurora_data['density'], aurora_data['speed'])
     print('') 
     print(var)
     
-    var = ('Scaled Values : '
-           'Bt={} G={} Bz={} Density={} Speed={}').format(aurora_data['s_bt'], aurora_data['s_g'], aurora_data['s_bz'], aurora_data['s_density'], aurora_data['s_speed'])
+    var = ('Scaled Values : Bt={} G={} Bz={} Density={} Speed={}')\
+        .format(aurora_data['s_bt'], aurora_data['s_g'], aurora_data['s_bz'], aurora_data['s_density'], aurora_data['s_speed'])
     print(var)
 
 

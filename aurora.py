@@ -47,12 +47,6 @@ def aurora():
                  "timestamp": "Now"}
 
   spin_the_ring() # just for fun we will spin the LEDs on the ring to show we're starting
-  # If we have imported our own personalised notification module then send notification by that
-  message = 'Starting Aurora Lamp'
-  if 'my_notification' not in sys.modules:
-     print(message)
-  else:  # If we haven't then just print the message to console
-     my_notification.notification(message)
 
   while True:
     gc.collect()
@@ -63,12 +57,16 @@ def aurora():
 
     # Read the data from the various web urls
     read_data(aurora_data)
+
     # Scale the data so it is appropriate for the neopixel display
     scale_data(aurora_data)
+
     # Print the data out to the terminal (mainly just for debugging etc)
     print_data(aurora_data)
+
     # Show the values on the neopixel ring
     neopixel_display(aurora_data)
+
     # Send external notifications if necessary
     notifications(aurora_data)
 
@@ -203,34 +201,13 @@ def neopixel_display(aurora_data):
         np.write()
 
 def notifications(aurora_data):
-    message = ''
 
-    # Check to see what has changed and what we should be notifying about
-    if aurora_data['s_g'] > aurora_data['last_s_g']:
-        message = message + 'G is now {}\n'.format(aurora_data['g'])
-    if aurora_data['s_bz'] >= 2 and aurora_data['s_bz'] > aurora_data['last_s_bz']:
-        message = message + 'Bz is now {}\n'.format(aurora_data['bz'])
-    if aurora_data['s_bt'] >= 2 and aurora_data['s_bt'] > aurora_data['last_s_bt']:
-        message = message + 'Bt is now {}\n'.format(aurora_data['bt'])
-    if aurora_data['s_speed'] >= 2 and aurora_data['s_speed'] > aurora_data['last_s_speed']:
-        message = message + 'Speed is now {}\n'.format(aurora_data['speed'])
-    if aurora_data['s_density'] >= 2 and aurora_data['s_density'] > aurora_data['last_s_density']:
-        message = message + 'Density is now {}\n'.format(aurora_data['density'])
+    #If we haven't imported our own personalised notification module then say so
+    if 'my_notification' not in sys.modules:
+        print('my_notification module not loaded')
+    else:  # If we have then pass it the data so it can do something with it
+        my_notification.notification(aurora_data)
 
-    # If we have a message to send then send it
-    if message != '':
-        # If we have imported our own personalised notification module then send notification by that
-        if 'my_notification' not in sys.modules:
-            print(message)
-        else:  # If we haven't then just print the message to console
-            my_notification.notification(message)
-
-    # Update the last values for comparison next time around
-    aurora_data['last_s_g'] = aurora_data['s_g']
-    aurora_data['last_s_bz'] = aurora_data['s_bz']
-    aurora_data['last_s_bt'] = aurora_data['s_bt']
-    aurora_data['last_s_speed'] = aurora_data['s_speed']
-    aurora_data['last_s_density'] = aurora_data['s_density']
 
 
 # If we are being imported as a module then do nothing
